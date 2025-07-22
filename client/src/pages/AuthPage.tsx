@@ -35,7 +35,7 @@ function AuthPage() {
     setError('');
 
     // Create Google OAuth URL with proper parameters for account selection
-    const baseUrl = import.meta.env.BACKEND_URL || 'http://localhost:5000/api/auth/google';
+    const baseUrl = 'https://flashcards-api.simmu.me/api/auth/google';
     const params = new URLSearchParams({
       prompt: 'select_account', // Force account selection dialog
       access_type: 'offline',
