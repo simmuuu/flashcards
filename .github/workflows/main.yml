@@ -118,7 +118,7 @@ jobs:
             # Stop existing services gracefully
             echo "⏹️ Stopping existing services..."
             if [ -f docker-compose.yml ]; then
-              docker-compose down --timeout 30 || echo "No existing services to stop"
+              docker compose down --timeout 30 || echo "No existing services to stop"
             fi
             
             # Pull the latest image
@@ -127,7 +127,7 @@ jobs:
             
             # Start services
             echo "🚀 Starting services..."
-            docker-compose up -d
+            docker compose up -d
             
             # Wait for services to be healthy
             echo "🏥 Waiting for services to be healthy..."
@@ -135,7 +135,7 @@ jobs:
             
             # Show status
             echo "📊 Service status:"
-            docker-compose ps
+            docker compose ps
             
             # Cleanup old images
             echo "🧹 Cleaning up old images..."
