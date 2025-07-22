@@ -20,17 +20,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: server/pnpm-lock.yaml
-      
-      - name: Install pnpm
-        run: npm install -g pnpm
       
       - name: Install dependencies and build
         run: |
           cd server
-          pnpm install --frozen-lockfile
-          pnpm run build
+          npm install
+          npm run build
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

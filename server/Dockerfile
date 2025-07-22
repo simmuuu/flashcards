@@ -2,14 +2,11 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
 # Install only production dependencies
-RUN pnpm install --prod --frozen-lockfile
+RUN npm install --only=production
 
 # Copy the built JavaScript files
 COPY dist/ ./dist/
