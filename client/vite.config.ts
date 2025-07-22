@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react-swc';
+import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -8,11 +8,11 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: 'index.html',
-        sw: 'public/sw.js'
-      }
-    }
+        // sw: 'public/sw.js'
+      },
+    },
   },
   server: {
-    port: 3000
-  }
-})
+    port: 3000,
+  },
+});
