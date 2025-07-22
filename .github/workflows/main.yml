@@ -43,15 +43,26 @@ jobs:
           host: ${{ secrets.DO_HOST }}
           username: ${{ secrets.DO_USER }}
           key: ${{ secrets.DO_SSH_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 10m
+          debug: true
           script: |
+            set -e  # Exit on any error
+            
+            echo "🔍 Starting deployment process..."
+            
             # Login to GitHub Container Registry
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "🔐 Logging into GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
             
             # Navigate to project directory
+            echo "📁 Setting up project directory..."
             mkdir -p /opt/flashcards
             cd /opt/flashcards
             
             # Create production docker-compose.yml
+            echo "📝 Creating docker-compose.yml..."
             cat > docker-compose.yml << 'EOF'
             version: '3.8'
             
@@ -73,18 +84,28 @@ jobs:
                   - mongodb
                 networks:
                   - flashcards-network
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
             
               mongodb:
                 image: mongo:7.0
                 restart: unless-stopped
                 ports:
-                  - "27017:27017"
+                  - "127.0.0.1:27017:27017"  # Only bind to localhost for security
                 environment:
                   MONGO_INITDB_DATABASE: flashcards
                 volumes:
                   - mongodb_data:/data/db
                 networks:
                   - flashcards-network
+                healthcheck:
+                  test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
             
             volumes:
               mongodb_data:
@@ -94,13 +115,46 @@ jobs:
                 driver: bridge
             EOF
             
-            # Deploy services
-            docker-compose down || true
+            # Stop existing services gracefully
+            echo "⏹️ Stopping existing services..."
+            if [ -f docker-compose.yml ]; then
+              docker-compose down --timeout 30 || echo "No existing services to stop"
+            fi
+            
+            # Pull the latest image
+            echo "📥 Pulling latest Docker image..."
             docker pull ghcr.io/${{ github.repository_owner }}/flashcards-server:latest
+            
+            # Start services
+            echo "🚀 Starting services..."
             docker-compose up -d
             
-            # Cleanup
-            docker image prune -f
+            # Wait for services to be healthy
+            echo "🏥 Waiting for services to be healthy..."
+            timeout 120 bash -c 'until docker-compose ps | grep -q "healthy\|Up"; do sleep 5; echo "Waiting..."; done' || echo "Health check timeout"
+            
+            # Show status
+            echo "📊 Service status:"
+            docker-compose ps
+            
+            # Cleanup old images
+            echo "🧹 Cleaning up old images..."
+            docker image prune -af --filter "until=24h"
+            
+            echo "✅ Deployment completed successfully!"
+      
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            cd /opt/flashcards
+            echo "Final service status:"
+            docker-compose ps
+            echo "Server logs (last 20 lines):"
+            docker-compose logs --tail=20 server
       
       - name: Notify Discord on Success
         if: success()
@@ -108,7 +162,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          args: '🚀 **Deployment Successful!** Flashcards server deployed to Digital Ocean. Commit: `${{ github.sha }}`'
+          args: '🚀 **Deployment Successful!** Flashcards server deployed to Digital Ocean. Commit: `${{ github.sha }}` | Server: ${{ secrets.DO_HOST }}'
       
       - name: Notify Discord on Failure
         if: failure()
@@ -116,4 +170,4 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          args: '❌ **Deployment Failed!** Error deploying flashcards server. Check GitHub Actions logs. Commit: `${{ github.sha }}`'
+          args: '❌ **Deployment Failed!** Error deploying flashcards server. Check GitHub Actions logs. Commit: `${{ github.sha }}` | Server: ${{ secrets.DO_HOST }}'
