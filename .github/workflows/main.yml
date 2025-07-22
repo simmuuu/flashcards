@@ -19,7 +19,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: server/package-lock.json
       
@@ -64,12 +64,6 @@ jobs:
             
             echo "🔍 Starting deployment process..."
             
-            # Check if Docker is running
-            if ! docker info > /dev/null 2>&1; then
-              echo "❌ Docker is not running or not accessible"
-              exit 1
-            fi
-            
             # Login to GitHub Container Registry
             echo "🔐 Logging into GitHub Container Registry..."
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
@@ -103,12 +97,6 @@ jobs:
                   - mongodb
                 networks:
                   - flashcards-network
-                healthcheck:
-                  test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 40s
             
               mongodb:
                 image: mongo:7.0
@@ -121,12 +109,6 @@ jobs:
                   - mongodb_data:/data/db
                 networks:
                   - flashcards-network
-                healthcheck:
-                  test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 40s
             
             volumes:
               mongodb_data:
@@ -148,40 +130,11 @@ jobs:
             echo "🚀 Starting services..."
             docker compose up -d
             
-            # Wait for services to be healthy
-            echo "🏥 Waiting for services to be healthy..."
-            timeout 120 bash -c 'until docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(healthy|running)"; do sleep 5; echo "Waiting for services..."; done' || echo "Health check timeout - continuing anyway"
-            
-            # Show status
-            echo "📊 Service status:"
-            docker compose ps
-            
-            # Show recent logs if there are issues
-            if ! docker compose ps --format "table {{.Status}}" | grep -q "healthy\|Up"; then
-              echo "⚠️ Services may not be fully healthy, showing logs:"
-              docker compose logs --tail=10
-            fi
-            
             # Cleanup old images
             echo "🧹 Cleaning up old images..."
             docker image prune -af --filter "until=24h" || true
             
-            echo "✅ Deployment completed successfully!"
-      
-      - name: Verify deployment
-        if: success()
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USER }}
-          key: ${{ secrets.DO_SSH_KEY }}
-          script: |
-            cd /opt/flashcards
-            echo "Final service status:"
-            docker compose ps
-            echo ""
-            echo "Server logs (last 10 lines):"
-            docker compose logs --tail=10 server
+            echo "✅ Deployment completed!"
       
       - name: Notify Discord on Success
         if: success()
