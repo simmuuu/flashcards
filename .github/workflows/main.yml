@@ -82,7 +82,7 @@ jobs:
                 image: ghcr.io/${{ github.repository_owner }}/flashcards-server:latest
                 restart: unless-stopped
                 ports:
-                  - "3000:3000"
+                  - "5000:5000"
                 environment:
                   NODE_ENV: production
                   MONGO_URI: mongodb://mongodb:27017/flashcards

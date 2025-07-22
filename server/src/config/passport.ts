@@ -29,7 +29,7 @@ passport.use(
 const googleOptions = {
   clientID: process.env.GOOGLE_CLIENT_ID!,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  callbackURL: '/api/auth/google/callback',
+  callbackURL: 'https://flashcards-api.simmu.me/api/auth/google/callback',
 };
 
 passport.use(
