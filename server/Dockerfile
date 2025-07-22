@@ -9,7 +9,7 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 
 # Install all dependencies (including devDependencies for building)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY . .
 
@@ -17,7 +17,7 @@ COPY . .
 RUN pnpm run build
 
 # Remove devDependencies and reinstall only production dependencies
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod
 
 ENV NODE_ENV=production
 
