@@ -16,6 +16,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+      
+      - name: Install dependencies and build
+        run: |
+          cd server
+          npm ci
+          npm run build
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
@@ -45,12 +58,17 @@ jobs:
           key: ${{ secrets.DO_SSH_KEY }}
           port: 22
           timeout: 60s
-          command_timeout: 10m
-          debug: true
+          command_timeout: 15m
           script: |
-            set -e  # Exit on any error
+            set -e
             
             echo "🔍 Starting deployment process..."
+            
+            # Check if Docker is running
+            if ! docker info > /dev/null 2>&1; then
+              echo "❌ Docker is not running or not accessible"
+              exit 1
+            fi
             
             # Login to GitHub Container Registry
             echo "🔐 Logging into GitHub Container Registry..."
@@ -58,7 +76,8 @@ jobs:
             
             # Navigate to project directory
             echo "📁 Setting up project directory..."
-            mkdir -p /opt/flashcards
+            sudo mkdir -p /opt/flashcards
+            sudo chown $USER:$USER /opt/flashcards
             cd /opt/flashcards
             
             # Create production docker-compose.yml
@@ -85,16 +104,17 @@ jobs:
                 networks:
                   - flashcards-network
                 healthcheck:
-                  test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+                  test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
                   interval: 30s
                   timeout: 10s
                   retries: 3
+                  start_period: 40s
             
               mongodb:
                 image: mongo:7.0
                 restart: unless-stopped
                 ports:
-                  - "127.0.0.1:27017:27017"  # Only bind to localhost for security
+                  - "127.0.0.1:27017:27017"
                 environment:
                   MONGO_INITDB_DATABASE: flashcards
                 volumes:
@@ -102,10 +122,11 @@ jobs:
                 networks:
                   - flashcards-network
                 healthcheck:
-                  test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+                  test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
                   interval: 30s
                   timeout: 10s
                   retries: 3
+                  start_period: 40s
             
             volumes:
               mongodb_data:
@@ -115,11 +136,9 @@ jobs:
                 driver: bridge
             EOF
             
-            # Stop existing services gracefully
+            # Stop existing services
             echo "⏹️ Stopping existing services..."
-            if [ -f docker-compose.yml ]; then
-              docker compose down --timeout 30 || echo "No existing services to stop"
-            fi
+            docker compose down --timeout 30 || true
             
             # Pull the latest image
             echo "📥 Pulling latest Docker image..."
@@ -131,19 +150,26 @@ jobs:
             
             # Wait for services to be healthy
             echo "🏥 Waiting for services to be healthy..."
-            timeout 120 bash -c 'until docker-compose ps | grep -q "healthy\|Up"; do sleep 5; echo "Waiting..."; done' || echo "Health check timeout"
+            timeout 120 bash -c 'until docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep -E "(healthy|running)"; do sleep 5; echo "Waiting for services..."; done' || echo "Health check timeout - continuing anyway"
             
             # Show status
             echo "📊 Service status:"
             docker compose ps
             
+            # Show recent logs if there are issues
+            if ! docker compose ps --format "table {{.Status}}" | grep -q "healthy\|Up"; then
+              echo "⚠️ Services may not be fully healthy, showing logs:"
+              docker compose logs --tail=10
+            fi
+            
             # Cleanup old images
             echo "🧹 Cleaning up old images..."
-            docker image prune -af --filter "until=24h"
+            docker image prune -af --filter "until=24h" || true
             
             echo "✅ Deployment completed successfully!"
       
       - name: Verify deployment
+        if: success()
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DO_HOST }}
@@ -152,9 +178,10 @@ jobs:
           script: |
             cd /opt/flashcards
             echo "Final service status:"
-            docker-compose ps
-            echo "Server logs (last 20 lines):"
-            docker-compose logs --tail=20 server
+            docker compose ps
+            echo ""
+            echo "Server logs (last 10 lines):"
+            docker compose logs --tail=10 server
       
       - name: Notify Discord on Success
         if: success()
@@ -162,7 +189,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          args: '🚀 **Deployment Successful!** Flashcards server deployed to Digital Ocean. Commit: `${{ github.sha }}` | Server: ${{ secrets.DO_HOST }}'
+          args: '🚀 **Deployment Successful!** Flashcards server deployed to Digital Ocean. Commit: `${{ github.sha }}`'
       
       - name: Notify Discord on Failure
         if: failure()
@@ -170,4 +197,4 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         with:
-          args: '❌ **Deployment Failed!** Error deploying flashcards server. Check GitHub Actions logs. Commit: `${{ github.sha }}` | Server: ${{ secrets.DO_HOST }}'
+          args: '❌ **Deployment Failed!** Error deploying flashcards server. Check GitHub Actions logs. Commit: `${{ github.sha }}`'
