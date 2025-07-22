@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage';
 import AuthCallback from './pages/AuthCallback';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
+import SharedFolderView from './components/SharedFolderView';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -61,6 +62,7 @@ function AppContent() {
         <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
         <Route path="/folder/:folderId" element={user ? <HomePage /> : <Navigate to="/" />} />
         <Route path="/folder/:folderId/study" element={user ? <HomePage /> : <Navigate to="/" />} />
+        <Route path="/shared/:shareId" element={<SharedFolderView />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

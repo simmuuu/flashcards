@@ -13,6 +13,7 @@ dotenv.config();
 import authRoutes from "./routes/auth";
 import folderRoutes from "./routes/folders";
 import cardRoutes from "./routes/cards";
+import statsRoutes from "./routes/stats";
 
 // Passport configuration
 import "./config/passport";
@@ -22,7 +23,7 @@ const port = process.env.PORT || 5000;
 
 // --- Middleware ---
 app.use(helmet()); // Secure HTTP headers
-app.use(cors({ origin: "http://localhost:3000", credentials: true })); // Allow client origin
+app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:3000", credentials: true })); // Allow client origin
 app.use(express.json()); // Body parser
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize()); // Passport
@@ -47,6 +48,7 @@ mongoose
 app.use("/api/auth", authRoutes);
 app.use("/api/folders", folderRoutes);
 app.use("/api/cards", cardRoutes);
+app.use("/api/stats", statsRoutes);
 
 // --- Global Error Handler ---
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

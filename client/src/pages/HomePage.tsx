@@ -7,6 +7,8 @@ import api from '../services/api';
 import AppHeader from '../components/AppHeader';
 import FolderCard from '../components/FolderCard';
 import CustomDialog from '../components/Dialog'; // Renamed to CustomDialog
+import ShareDialog from '../components/ShareDialog';
+import Heatmap from '../components/Heatmap';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -23,6 +25,10 @@ export default function HomePage() {
   const [showDialog, setShowDialog] = useState(false);
   const [dialogType, setDialogType] = useState<'folder' | 'card' | ''>('');
   const [dialogData, setDialogData] = useState<{ name?: string; front?: string; back?: string }>({});
+  const [heatmapData, setHeatmapData] = useState<{ date: string; count: number }[]>([]);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [folderToShare, setFolderToShare] = useState<Folder | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
 
   // Determine current view based on URL
   const isStudyMode = location.pathname.includes('/study');
@@ -45,7 +51,18 @@ export default function HomePage() {
         }
       }
     };
+    const fetchHeatmapData = async () => {
+      if (user) {
+        try {
+          const res = await api.get<{ date: string; count: number }[]>('/stats/heatmap');
+          setHeatmapData(res.data);
+        } catch (err) {
+          console.error('Error fetching heatmap data:', err);
+        }
+      }
+    };
     fetchFolders();
+    fetchHeatmapData();
   }, [user, logout]);
 
   // Fetch folder and cards when folderId changes
@@ -247,6 +264,48 @@ export default function HomePage() {
     }
   };
 
+  const handleShareFolder = (folder: Folder) => {
+    setFolderToShare(folder);
+    setShowShareDialog(true);
+  };
+
+  const handleToggleShare = async (folderId: string): Promise<void> => {
+    try {
+      const response = await api.patch<Folder>(`/folders/${folderId}/share`);
+      const updatedFolder = response.data;
+
+      // Update the folders state
+      setFolders(prevFolders => prevFolders.map(f => (f._id === folderId ? updatedFolder : f)));
+
+      // Update folderToShare if it's the one being shared
+      if (folderToShare && folderToShare._id === folderId) {
+        setFolderToShare(updatedFolder);
+      }
+
+      toast.success(updatedFolder.isShared ? 'Folder is now public and shareable!' : 'Folder is now private');
+    } catch (error: any) {
+      console.error('Error toggling folder share:', error);
+      toast.error('Failed to update sharing settings');
+    }
+  };
+
+  const handleCloseShareDialog = () => {
+    setShowShareDialog(false);
+    setFolderToShare(null);
+  };
+
+  const toggleCardExpansion = (cardId: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  };
+
   if (isStudyMode && currentCard && currentFolder) {
     const totalDueCards = getDueCards(currentFolder).length;
     const progressValue = (studyProgress.length / totalDueCards) * 100;
@@ -389,14 +448,31 @@ export default function HomePage() {
                 const isDue = new Date(card.nextReview).getTime() <= Date.now();
                 const difficultyLevel =
                   card.easinessFactor > 2.5 ? 'easy' : card.easinessFactor < 2.0 ? 'hard' : 'medium';
+                const isExpanded = expandedCards.has(card._id);
 
                 return (
-                  <div key={card._id} className={`card-item ${isDue ? 'due' : ''} ${difficultyLevel}`}>
+                  <div
+                    key={card._id}
+                    className={`card-item ${isDue ? 'due' : ''} ${difficultyLevel} ${isExpanded ? 'expanded' : ''}`}
+                    onClick={() => toggleCardExpansion(card._id)}
+                  >
                     <div className="card-preview">
-                      <strong>{card.front}</strong>
+                      <div className="card-content-section">
+                        <div className="card-question">
+                          <strong>{card.front}</strong>
+                        </div>
+                        {isExpanded && (
+                          <div className="card-answer">
+                            <div className="answer-text">{card.back}</div>
+                          </div>
+                        )}
+                      </div>
                       <span className={`difficulty ${difficultyLevel}`}>{difficultyLevel.toUpperCase()}</span>
                     </div>
-                    <div className="next-review">Next review: {formatTimeUntilReview(card.nextReview)}</div>
+                    <div className="card-footer">
+                      <div className="next-review">Next review: {formatTimeUntilReview(card.nextReview)}</div>
+                      <div className="click-hint">{isExpanded ? 'Click to hide' : 'Click for answer'}</div>
+                    </div>
                   </div>
                 );
               })}
@@ -454,17 +530,7 @@ export default function HomePage() {
       <div className="main-container">
         <AppHeader onAddFolder={addNewFolder} />
 
-        {/* Daily Stats */}
-        <div className="daily-stats">
-          <div className="stat-card">
-            <div className="stat-number">0</div>
-            <div className="stat-label">Today</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-number">0</div>
-            <div className="stat-label">Yesterday</div>
-          </div>
-        </div>
+        <Heatmap data={heatmapData} />
 
         <div className="folders-grid">
           {folders.map(folder => (
@@ -475,6 +541,7 @@ export default function HomePage() {
                 navigate(`/folder/${folder._id}`);
               }}
               onDeleteFolder={handleDeleteFolder}
+              onShareFolder={handleShareFolder}
               getDueCards={getDueCards}
             />
           ))}
@@ -525,6 +592,15 @@ export default function HomePage() {
           </div>
         )}
       </CustomDialog>
+
+      {folderToShare && (
+        <ShareDialog
+          folder={folderToShare}
+          isOpen={showShareDialog}
+          onClose={handleCloseShareDialog}
+          onToggleShare={handleToggleShare}
+        />
+      )}
     </div>
   );
 }

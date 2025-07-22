@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import { sendDiscordWebhook } from '../utils/discordWebhook';
 import { body, validationResult } from 'express-validator';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
@@ -23,7 +24,7 @@ router.post(
     body('email', 'Please include a valid email').isEmail(),
     body('password', 'Password must be 6 or more characters').isLength({ min: 6 }),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -59,7 +60,15 @@ router.post(
       const token = createToken(user.id);
       res.status(201).json({ token });
     } catch (err) {
-      console.error(err.message);
+      let msg = 'Server error';
+      if (err instanceof Error) {
+        console.error(err.message);
+        msg = err.message;
+      } else {
+        console.error(err);
+        msg = String(err);
+      }
+      sendDiscordWebhook(`[Auth/Register] Error: ${msg}`);
       res.status(500).send('Server error');
     }
   }
@@ -69,7 +78,7 @@ router.post(
 router.post(
   '/login',
   [body('email', 'Please include a valid email').isEmail(), body('password', 'Password is required').exists()],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -86,21 +95,41 @@ router.post(
       const token = createToken(user.id);
       res.json({ token });
     } catch (err) {
-      console.error(err.message);
+      let msg = 'Server error';
+      if (err instanceof Error) {
+        console.error(err.message);
+        msg = err.message;
+      } else {
+        console.error(err);
+        msg = String(err);
+      }
+      sendDiscordWebhook(`[Auth/Login] Error: ${msg}`);
       res.status(500).send('Server error');
     }
   }
 );
 
 // --- Get authenticated user ---
-router.get('/me', auth, async (req, res) => {
+router.get('/me', auth, async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.user.id);
+    if (!req.user) {
+      return res.status(401).json({ msg: 'Unauthorized' });
+    }
+    const user = await User.findById((req.user as any).id);
     res.json(user);
   } catch (err) {
-    console.error(err.message);
+    let msg = 'Server error';
+    if (err instanceof Error) {
+      console.error(err.message);
+      msg = err.message;
+    } else {
+      console.error(err);
+      msg = String(err);
+    }
+    sendDiscordWebhook(`[Auth/Me] Error: ${msg}`);
     res.status(500).send('Server error');
   }
+  // .env: DISCORD_WEBHOOK_URL=your_webhook_url_here
 });
 
 // --- Google OAuth ---
@@ -125,12 +154,16 @@ router.get(
   '/google/callback',
   passport.authenticate('google', {
     session: false,
-    failureRedirect: 'http://192.168.0.4:3000/auth?error=google_auth_failed',
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/auth?error=google_auth_failed`,
   }),
-  (req, res) => {
-    const token = createToken(req.user.id);
+  (req: Request, res: Response) => {
+    if (!req.user) {
+      return res.status(401).json({ msg: 'Unauthorized' });
+    }
+    const token = createToken((req.user as any)._id || (req.user as any).id);
     // Simple redirect to auth callback
-    res.redirect(`http://192.168.0.4:3000/auth/callback?token=${token}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
 );
 

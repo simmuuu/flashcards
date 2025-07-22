@@ -1,5 +1,5 @@
 export interface Card {
-  _id:string;
+  _id: string;
   front: string;
   back: string;
   nextReview: string;
@@ -14,4 +14,26 @@ export interface Folder {
   cards?: Card[];
   createdAt: string;
   updatedAt: string;
+  isShared?: boolean;
+  shareId?: string;
+  sharedBy?: {
+    _id: string;
+    name: string;
+  };
+}
+
+export interface SharedFolder {
+  folder: {
+    _id: string;
+    name: string;
+    createdBy: {
+      _id: string;
+      name: string;
+    };
+    createdAt: string;
+  };
+  cards: {
+    front: string;
+    back: string;
+  }[];
 }
