@@ -133,7 +133,7 @@
 .auth-input:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(168, 230, 207, 0.2);
+  box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.5);
 }
 
 .auth-error {

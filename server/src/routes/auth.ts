@@ -125,12 +125,12 @@ router.get(
   '/google/callback',
   passport.authenticate('google', {
     session: false,
-    failureRedirect: 'http://localhost:3000/auth?error=google_auth_failed',
+    failureRedirect: 'http://192.168.0.4:3000/auth?error=google_auth_failed',
   }),
   (req, res) => {
     const token = createToken(req.user.id);
     // Simple redirect to auth callback
-    res.redirect(`http://localhost:3000/auth/callback?token=${token}`);
+    res.redirect(`http://192.168.0.4:3000/auth/callback?token=${token}`);
   }
 );
 

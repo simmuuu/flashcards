@@ -35,7 +35,7 @@ function AuthPage() {
     setError('');
 
     // Create Google OAuth URL with proper parameters for account selection
-    const baseUrl = 'http://localhost:5000/api/auth/google';
+    const baseUrl = 'http://192.168.0.4:5000/api/auth/google';
     const params = new URLSearchParams({
       prompt: 'select_account', // Force account selection dialog
       access_type: 'offline',

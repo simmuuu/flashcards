@@ -36,14 +36,31 @@ function AppContent() {
             background: 'var(--bg-secondary)',
             color: 'var(--text-primary)',
             border: '1px solid var(--border-color)',
+            borderRadius: '0px', // Make it square
+            fontFamily: 'Geist, sans-serif',
+          },
+          success: {
+            iconTheme: {
+              primary: 'var(--accent-color)',
+              secondary: 'var(--bg-primary)',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: 'var(--error-color)',
+              secondary: 'var(--bg-primary)',
+            },
           },
         }}
+        position="top-center"
       />
       <ThemeToggle />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
+        <Route path="/folder/:folderId" element={user ? <HomePage /> : <Navigate to="/" />} />
+        <Route path="/folder/:folderId/study" element={user ? <HomePage /> : <Navigate to="/" />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </>

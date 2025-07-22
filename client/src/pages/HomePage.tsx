@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { Folder, Card } from '../types';
@@ -10,15 +11,23 @@ import './HomePage.css';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
+  const { folderId } = useParams<{ folderId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [folders, setFolders] = useState<Folder[]>([]);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
   const [showAnswer, setShowAnswer] = useState(false);
-  const [viewMode, setViewMode] = useState<'folders' | 'cards' | 'study'>('folders');
   const [studyProgress, setStudyProgress] = useState<number[]>([]); // Track answers for current session
   const [showDialog, setShowDialog] = useState(false);
   const [dialogType, setDialogType] = useState<'folder' | 'card' | ''>('');
   const [dialogData, setDialogData] = useState<{ name?: string; front?: string; back?: string }>({});
+
+  // Determine current view based on URL
+  const isStudyMode = location.pathname.includes('/study');
+  const isCardsView = folderId && !isStudyMode;
+  const isFoldersView = !folderId;
 
   // Fetch folders on component mount or user change
   useEffect(() => {
@@ -39,20 +48,45 @@ export default function HomePage() {
     fetchFolders();
   }, [user, logout]);
 
-  // Fetch cards when entering cards view mode
+  // Fetch folder and cards when folderId changes
   useEffect(() => {
-    const fetchCards = async () => {
-      if (viewMode === 'cards' && currentFolder && (!currentFolder.cards || currentFolder.cards.length === 0)) {
-        try {
-          const res = await api.get<Card[]>(`/cards/${currentFolder._id}`);
-          setCurrentFolder(prev => (prev ? { ...prev, cards: res.data } : null));
-        } catch (err) {
-          console.error('Error fetching cards:', err);
+    const fetchFolderAndCards = async () => {
+      if (folderId && folders.length > 0) {
+        const folder = folders.find(f => f._id === folderId);
+        if (folder) {
+          try {
+            const res = await api.get<Card[]>(`/cards/${folderId}`);
+            const folderWithCards = { ...folder, cards: res.data };
+            setCurrentFolder(folderWithCards);
+          } catch (err) {
+            console.error('Error fetching cards:', err);
+            toast.error('Failed to fetch cards');
+            navigate('/');
+          }
+        } else {
+          navigate('/');
         }
+      } else if (!folderId) {
+        setCurrentFolder(null);
       }
     };
-    fetchCards();
-  }, [viewMode, currentFolder?._id]);
+    fetchFolderAndCards();
+  }, [folderId, folders, navigate]);
+
+  // Initialize study mode when entering study URL
+  useEffect(() => {
+    if (isStudyMode && currentFolder && !currentCard) {
+      const dueCards = getDueCards(currentFolder);
+      if (dueCards.length === 0) {
+        toast.error('No cards due for review!');
+        navigate(`/folder/${currentFolder._id}`);
+        return;
+      }
+      setCurrentCard(dueCards[0]);
+      setShowAnswer(false);
+      setStudyProgress([]);
+    }
+  }, [isStudyMode, currentFolder, currentCard, navigate]);
 
   // Format time until next review
   const formatTimeUntilReview = (nextReview: string) => {
@@ -94,7 +128,7 @@ export default function HomePage() {
       setCurrentCard(dueCards[0]);
       setShowAnswer(false);
       setStudyProgress([]); // Reset progress for new session
-      setViewMode('study');
+      navigate(`/folder/${folder._id}/study`);
     } catch (err) {
       console.error('Error fetching cards for study:', err);
     }
@@ -134,7 +168,7 @@ export default function HomePage() {
         setShowAnswer(false);
       } else {
         toast.success('All cards reviewed! Great job!');
-        setViewMode('folders');
+        navigate('/');
         setCurrentFolder(null);
         setCurrentCard(null);
         setStudyProgress([]);
@@ -203,7 +237,7 @@ export default function HomePage() {
         setFolders(folders.filter(f => f._id !== folderId));
         if (currentFolder && currentFolder._id === folderId) {
           setCurrentFolder(null);
-          setViewMode('folders');
+          navigate('/');
         }
         toast.success('Folder deleted successfully!');
       } catch (err) {
@@ -213,7 +247,7 @@ export default function HomePage() {
     }
   };
 
-  if (viewMode === 'study' && currentCard && currentFolder) {
+  if (isStudyMode && currentCard && currentFolder) {
     const totalDueCards = getDueCards(currentFolder).length;
     const progressValue = (studyProgress.length / totalDueCards) * 100;
 
@@ -223,7 +257,7 @@ export default function HomePage() {
           <AppHeader title={currentFolder?.name} isFolderOpen={true} />
           <div className="study-container">
             <div className="study-header">
-              <button onClick={() => setViewMode('cards')} className="back-btn">
+              <button onClick={() => navigate(`/folder/${currentFolder._id}`)} className="back-btn">
                 ← Back
               </button>
             </div>
@@ -319,21 +353,24 @@ export default function HomePage() {
     );
   }
 
-  if (viewMode === 'cards' && currentFolder) {
+  if (isCardsView && currentFolder) {
     const dueCards = getDueCards(currentFolder);
 
     return (
       <div className="app">
         <div className="main-container">
-          <AppHeader title={currentFolder.name} isFolderOpen={true} />
+          <AppHeader title="" isFolderOpen={true} />
           <div className="folder-view">
             <div className="folder-header">
-              <button onClick={() => setViewMode('folders')} className="back-btn">
-                ← Back
-              </button>
-              <button onClick={addNewCard} className="add-btn">
-                + Add Card
-              </button>
+              <h2>{currentFolder.name}</h2>
+              <div className="folder-header-buttons">
+                <button onClick={() => navigate('/')} className="back-btn">
+                  ← Back
+                </button>
+                <button onClick={addNewCard} className="add-btn">
+                  + Add Card
+                </button>
+              </div>
             </div>
 
             <div className="cards-stats">
@@ -354,7 +391,7 @@ export default function HomePage() {
                   card.easinessFactor > 2.5 ? 'easy' : card.easinessFactor < 2.0 ? 'hard' : 'medium';
 
                 return (
-                  <div key={card._id} className={`card-item ${isDue ? 'due' : ''}`}>
+                  <div key={card._id} className={`card-item ${isDue ? 'due' : ''} ${difficultyLevel}`}>
                     <div className="card-preview">
                       <strong>{card.front}</strong>
                       <span className={`difficulty ${difficultyLevel}`}>{difficultyLevel.toUpperCase()}</span>
@@ -434,16 +471,8 @@ export default function HomePage() {
             <FolderCard
               key={folder._id}
               folder={folder}
-              onFolderClick={async folder => {
-                try {
-                  const res = await api.get<Card[]>(`/cards/${folder._id}`);
-                  const folderWithCards = { ...folder, cards: res.data };
-                  setCurrentFolder(folderWithCards);
-                  setViewMode('cards');
-                } catch (err) {
-                  console.error('Error fetching cards:', err);
-                  toast.error('Failed to fetch cards');
-                }
+              onFolderClick={folder => {
+                navigate(`/folder/${folder._id}`);
               }}
               onDeleteFolder={handleDeleteFolder}
               getDueCards={getDueCards}

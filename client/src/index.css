@@ -1,53 +1,54 @@
-/* CSS Variables f[data-theme="light"] {
+/* CSS Variables */
+:root {
+  /* Dark theme (default) */
+  --bg-primary: #0f0f0f; /* Pure black */
+  --bg-secondary: #161616; /* Very dark gray */
+  --bg-tertiary: #1a1a1a; /* Dark gray */
+  --bg-hover: #2a2a2a; /* Hover gray */
+  --text-primary: #ffffff; /* Pure white text */
+  --text-secondary: #a0aec0; /* Light gray text */
+  --text-muted: #9ca3af; /* Muted gray text */
+  --accent-color: #a8e6cf;
+  --accent-hover: #88ddb3;
+  --accent-color-rgb: 168, 230, 207; /* RGB values for rgba usage */
+  --border-color: #2a2a2a; /* Dark gray border */
+  --border-light: #4a5568; /* Medium gray border */
+  --error-color: #ef4444;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --overlay-color: rgba(0, 0, 0, 0.8);
+  --purple-color: #a78bfa; /* Purple for study mode (now using light mode purple) */
+  --purple-hover: #c3b0f7; /* Lighter purple for hover (now using light mode purple) */
+  --purple-color-rgb: 109, 40, 217; /* RGB values for rgba usage (now using light mode purple) */
+  --green-color: #88ddb3; /* Green for success actions */
+  --green-hover: #68d391; /* Lighter green for hover */
+  --red-color: #ef4444; /* Red for destructive actions */
+  --red-hover: #fc8181; /* Lighter red for hover */
+}
+
+[data-theme='light'] {
   /* Light theme with comfortable beige/white mix */
- {
-  --bg-primary: #faf9f7; /* Warm off-white */
+  --bg-primary: #ffffff; /* Pure white */
   --bg-secondary: #f5f4f1; /* Light beige */
   --bg-tertiary: #eeede8; /* Slightly darker beige */
   --bg-hover: #e8e6e0; /* Hover beige */
   --text-primary: #2d2a26; /* Dark warm brown */
   --text-secondary: #5a5550; /* Medium warm brown */
   --text-muted: #7a7269; /* Light warm brown */
-  --accent-color: #a8e6cf; /* Keep the nice green */
-  --accent-hover: #88ddb3; /* Keep the darker green */
+  --accent-color: #2d8a5b; /* Darker green for light mode */
+  --accent-hover: #236b47; /* Even darker green for hover */
+  --accent-color-rgb: 45, 138, 91; /* RGB values for rgba usage */
   --border-color: #d9d6cf; /* Light beige border */
   --border-light: #c4c0b8; /* Medium beige border */
   --error-color: #dc2626;
   --shadow-color: rgba(0, 0, 0, 0.08); /* Softer shadow */
-}
-
-:root {
-  /* Dark theme (default) */
-  --bg-primary: #0f0f0f;
-  --bg-secondary: #161616;
-  --bg-tertiary: #1a1a1a;
-  --bg-hover: #2a2a2a;
-  --text-primary: #ffffff;
-  --text-secondary: #a0aec0;
-  --text-muted: #9ca3af;
-  --accent-color: #a8e6cf;
-  --accent-hover: #88ddb3;
-  --border-color: #2a2a2a;
-  --border-light: #4a5568;
-  --error-color: #ef4444;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-}
-
-[data-theme='light'] {
-  /* Light theme */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #e9ecef;
-  --bg-hover: #e2e6ea;
-  --text-primary: #1a202c;
-  --text-secondary: #4a5568;
-  --text-muted: #6b7280;
-  --accent-color: #10b981;
-  --accent-hover: #059669;
-  --border-color: #e2e8f0;
-  --border-light: #cbd5e0;
-  --error-color: #dc2626;
-  --shadow-color: rgba(0, 0, 0, 0.1);
+  --overlay-color: rgba(0, 0, 0, 0.4); /* Lighter overlay for light mode */
+  --purple-color: #6d28d9; /* Much darker purple for better light mode contrast (now using dark mode purple) */
+  --purple-hover: #7c3aed; /* Slightly lighter purple for hover (now using dark mode purple) */
+  --purple-color-rgb: 167, 139, 250; /* RGB values for rgba usage (now using dark mode purple) */
+  --green-color: #16a34a; /* Darker green for light mode */
+  --green-hover: #22c55e; /* Lighter green for hover */
+  --red-color: #dc2626; /* Darker red for light mode */
+  --red-hover: #ef4444; /* Lighter red for hover */
 }
 
 * {
@@ -231,8 +232,8 @@ body {
 }
 
 .folder-card {
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   padding: 32px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -259,7 +260,7 @@ body {
 
 .folder-card:hover {
   transform: translateY(-8px);
-  border-color: #a8e6cf;
+  border-color: var(--accent-color);
   box-shadow: 0 16px 40px rgba(168, 230, 207, 0.1);
 }
 
@@ -267,12 +268,12 @@ body {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .folder-card p {
-  color: #9ca3af;
+  color: var(--text-muted);
   margin-bottom: 8px;
   font-size: 0.95rem;
 }
@@ -282,36 +283,38 @@ body {
   font-weight: 600;
 }
 
-.add-btn {
-  background: #ffb3b3;
-  color: #0f0f0f;
-  border: none;
-  padding: 16px 24px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  letter-spacing: 0.01em;
-}
-
 .add-btn:hover {
-  background: #ff9999;
+  background: var(--accent-hover);
   transform: translateY(-2px);
 }
 
 .back-btn {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   border: none;
   padding: 12px 20px;
   cursor: pointer;
   font-weight: 500;
   font-size: 0.9rem;
   transition: all 0.2s ease;
+  min-width: 120px;
 }
 
 .back-btn:hover {
-  background: #3a3a3a;
+  background: var(--bg-hover);
+}
+
+.add-btn {
+  background: var(--accent-color);
+  color: var(--bg-primary);
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+  min-width: 120px;
 }
 
 .folder-view {
@@ -323,42 +326,50 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 2rem;
   margin-bottom: 40px;
   padding: 16px 0;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .folder-header h2 {
-  color: #a8e6cf;
+  color: var(--green-color);
   font-size: 2.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
+  flex: 1;
+}
+
+.folder-header-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
 }
 
 .cards-stats {
-  background: #161616;
+  background: var(--bg-secondary);
   padding: 24px;
   margin-bottom: 24px;
-  border: 1px solid #2a2a2a;
-  border-left: 4px solid #ddd6fe;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--purple-color);
 }
 
 .cards-stats p {
   margin-bottom: 8px;
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
 .next-review {
-  color: #ddd6fe;
+  color: var(--purple-color);
   font-weight: 600;
   font-size: 0.85rem;
   margin-top: 4px;
 }
 
 .study-btn {
-  background: #ddd6fe;
-  color: #0f0f0f;
+  background: var(--purple-color);
+  color: #ffffff;
   border: none;
   padding: 20px 32px;
   cursor: pointer;
@@ -371,7 +382,7 @@ body {
 }
 
 .study-btn:hover:not(:disabled) {
-  background: #c4b5fd;
+  background: var(--purple-hover);
   transform: translateY(-2px);
 }
 
@@ -389,8 +400,9 @@ body {
 }
 
 .card-item {
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: #000000;
+  border: 1px solid #333333;
+  border-radius: 0;
   padding: 20px;
   transition: all 0.2s ease;
   position: relative;
@@ -403,17 +415,29 @@ body {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: #3a3a3a;
+  background: var(--bg-hover);
   transition: background 0.2s ease;
 }
 
-.card-item.due::before {
+.card-item.easy::before {
+  background: #a8e6cf;
+}
+
+.card-item.medium::before {
+  background: #ffd93d;
+}
+
+.card-item.hard::before {
   background: #ffb3b3;
 }
 
+.card-item.due::before {
+  background: var(--purple-color);
+}
+
 .card-item.due {
-  border-color: #ffb3b3;
-  background: rgba(255, 179, 179, 0.03);
+  border-color: var(--purple-color);
+  background: rgba(var(--purple-color-rgb), 0.1);
 }
 
 .card-preview {
@@ -424,7 +448,7 @@ body {
 }
 
 .card-preview strong {
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 600;
   flex: 1;
 }
@@ -456,7 +480,7 @@ body {
 .study-container {
   max-width: 700px;
   margin: 0 auto;
-  padding-top: 20px;
+  padding-top: 0px;
 }
 
 .study-header {
@@ -465,19 +489,19 @@ body {
   gap: 16px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .study-header h2 {
-  color: #a8e6cf;
+  color: var(--green-color);
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .flashcard {
-  background: #161616;
-  border: 2px solid #ddd6fe;
+  background: var(--bg-secondary);
+  border: 2px solid var(--purple-color);
   padding: 48px 40px;
   margin-bottom: 40px;
   min-height: 320px;
@@ -496,11 +520,11 @@ body {
   left: 0;
   right: 0;
   height: 4px;
-  background: #ddd6fe;
+  background: var(--purple-color);
 }
 
 .card-content h3 {
-  color: #ddd6fe;
+  color: var(--purple-color);
   margin-bottom: 24px;
   font-size: 1.2rem;
   font-weight: 600;
@@ -511,7 +535,7 @@ body {
 .card-content p {
   font-size: 1.6rem;
   line-height: 1.4;
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
   max-width: 500px;
 }
@@ -521,7 +545,7 @@ body {
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  color: #9ca3af;
+  color: var(--text-muted);
   font-size: 0.9rem;
   text-align: center;
 }
@@ -537,7 +561,7 @@ body {
 .progress-dot {
   width: 8px;
   height: 8px;
-  background: #2a2a2a;
+  background: var(--bg-tertiary);
   transition: all 0.2s ease;
 }
 
@@ -556,12 +580,12 @@ body {
 .progress-dot.current {
   width: 12px;
   height: 12px;
-  background: #ddd6fe;
+  background: var(--purple-color);
 }
 
 .show-answer-btn {
-  background: #ddd6fe;
-  color: #0f0f0f;
+  background: var(--purple-color);
+  color: #ffffff;
   border: none;
   padding: 20px 32px;
   cursor: pointer;
@@ -573,7 +597,7 @@ body {
 }
 
 .show-answer-btn:hover {
-  background: #c4b5fd;
+  background: var(--purple-hover);
   transform: translateY(-2px);
 }
 
@@ -583,7 +607,7 @@ body {
 
 .difficulty-buttons h4 {
   margin-bottom: 32px;
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -658,7 +682,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: var(--overlay-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -667,23 +691,24 @@ body {
 }
 
 .dialog-box {
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px var(--shadow-color);
 }
 
 .dialog-header {
   padding: 24px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog-header h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -698,7 +723,7 @@ body {
 .input-group label {
   display: block;
   margin-bottom: 8px;
-  color: #d1d5db;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.95rem;
 }
@@ -707,9 +732,9 @@ body {
 .input-group textarea {
   width: 100%;
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
-  color: #ffffff;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   font-size: 1rem;
   font-family: 'Geist', sans-serif;
   resize: vertical;
@@ -719,17 +744,17 @@ body {
 .input-group input:focus,
 .input-group textarea:focus {
   outline: none;
-  border-color: #a8e6cf;
+  border-color: var(--accent-color);
 }
 
 .input-group input::placeholder,
 .input-group textarea::placeholder {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .dialog-actions {
   padding: 24px;
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--border-color);
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -746,26 +771,26 @@ body {
 }
 
 .dialog-btn.cancel {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .dialog-btn.cancel:hover {
-  background: #3a3a3a;
+  background: var(--bg-hover);
 }
 
 .dialog-btn.save {
-  background: #a8e6cf;
+  background: var(--accent-color);
   color: #0f0f0f;
 }
 
 .dialog-btn.save:hover:not(:disabled) {
-  background: #88ddb3;
+  background: var(--accent-hover);
 }
 
 .dialog-btn.save:disabled {
-  background: #404040;
-  color: #666;
+  background: var(--bg-hover);
+  color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -819,25 +844,46 @@ body {
 
   .folder-header {
     flex-direction: column;
-    gap: 20px;
+    gap: 1rem;
     text-align: center;
     margin-bottom: 32px;
-    padding: 24px 0;
+    padding-top: 0px;
+    padding-bottom: 24px;
   }
 
   .folder-header h2 {
     font-size: 2rem;
   }
 
+  .folder-header-buttons {
+    width: 100%;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .folder-header .back-btn {
+    display: none;
+  }
+
+  .folder-header .add-btn {
+    flex: none;
+    width: 100%;
+    min-width: auto;
+  }
+
   .study-header {
     flex-direction: column;
-    gap: 12px;
+    gap: 0;
     text-align: center;
     margin-bottom: 20px;
   }
 
   .study-header h2 {
     font-size: 1.25rem;
+  }
+
+  .study-header .back-btn {
+    display: none;
   }
 
   .progress-indicators {
@@ -891,7 +937,7 @@ body {
   }
 
   .study-container {
-    padding-top: 16px;
+    padding-top: 0px;
   }
 }
 

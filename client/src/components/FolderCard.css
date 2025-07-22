@@ -1,7 +1,7 @@
 .folder-card {
   position: relative;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   padding: 32px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
@@ -15,7 +15,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: #a8e6cf;
+  background: var(--accent-color);
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.3s ease;
@@ -27,22 +27,27 @@
 
 .folder-card:hover {
   transform: translateY(-8px);
-  border-color: #a8e6cf;
-  box-shadow: 0 16px 40px rgba(168, 230, 207, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: 0 16px 40px rgba(var(--accent-color-rgb), 0.1);
 }
 
 .folder-card-content h3 {
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #ffffff;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .folder-card-content p {
-  color: #9ca3af;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   font-size: 0.95rem;
+}
+
+.folder-card-content p.due-count {
+  color: #f6ad55; /* Orange color to highlight due cards */
+  font-weight: 600;
 }
 
 .folder-card-delete-button {
@@ -51,7 +56,7 @@
   right: 16px;
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   opacity: 0;
   transition: all 0.2s ease;
@@ -65,7 +70,7 @@
 
 .folder-card-delete-button:hover {
   background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  color: var(--error-color);
 }
 
 /* Mobile responsive */
