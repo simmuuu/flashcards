@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -10,12 +10,14 @@ import CustomDialog from '../components/Dialog'; // Renamed to CustomDialog
 import ShareDialog from '../components/ShareDialog';
 import Heatmap from '../components/Heatmap';
 import './HomePage.css';
+import { parsePdf } from '../utils/pdf';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
   const { folderId } = useParams<{ folderId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
@@ -35,22 +37,23 @@ export default function HomePage() {
   const isCardsView = folderId && !isStudyMode;
   const isFoldersView = !folderId;
 
-  // Fetch folders on component mount or user change
-  useEffect(() => {
-    const fetchFolders = async () => {
-      if (user) {
-        try {
-          const res = await api.get<Folder[]>('/folders');
-          setFolders(res.data);
-        } catch (err: any) {
-          console.error('Error fetching folders:', err);
-          // Handle error, e.g., redirect to login if token is invalid
-          if (err.response && err.response.status === 401) {
-            logout();
-          }
+  const fetchFolders = async () => {
+    if (user) {
+      try {
+        const res = await api.get<Folder[]>('/folders');
+        setFolders(res.data);
+      } catch (err: any) {
+        console.error('Error fetching folders:', err);
+        // Handle error, e.g., redirect to login if token is invalid
+        if (err.response && err.response.status === 401) {
+          logout();
         }
       }
-    };
+    }
+  };
+
+  // Fetch folders on component mount or user change
+  useEffect(() => {
     const fetchHeatmapData = async () => {
       if (user) {
         try {
@@ -294,6 +297,70 @@ export default function HomePage() {
     setFolderToShare(null);
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const text = await parsePdf(file, 10); // Limit to 5 pages
+        const response = await api.post('/ai/generate-from-pdf', {
+          text,
+          fileName: file.name,
+        });
+        const newFolder = response.data;
+        setFolders(prevFolders => [...prevFolders, newFolder]);
+        toast.success('Started generating flashcards from your PDF!');
+
+        // Poll for completion with retry logic
+        let retryCount = 0;
+        const maxRetries = 3;
+        const pollInterval = 3000; // Poll every 3 seconds
+        const maxPollTime = 300000; // Stop polling after 5 minutes
+        const startTime = Date.now();
+
+        const interval = setInterval(async () => {
+          try {
+            // Stop polling if we've exceeded max time
+            if (Date.now() - startTime > maxPollTime) {
+              clearInterval(interval);
+              toast.error('Flashcard generation timed out. Please try again.');
+              return;
+            }
+
+            const folderRes = await api.get<Folder>(`/folders/${newFolder._id}`);
+
+            if (folderRes.data.status === 'completed') {
+              clearInterval(interval);
+              fetchFolders(); // Refetch all folders to get the updated one
+              toast.success('Flashcards generated successfully!');
+            } else if (folderRes.data.status === 'failed') {
+              clearInterval(interval);
+              toast.error('Failed to generate flashcards. Please try again.');
+              // Remove the failed folder from the list
+              setFolders(prevFolders => prevFolders.filter(f => f._id !== newFolder._id));
+            }
+            // Reset retry count on successful request
+            retryCount = 0;
+          } catch (err) {
+            console.error('Error polling for folder status:', err);
+            retryCount++;
+
+            if (retryCount >= maxRetries) {
+              clearInterval(interval);
+              toast.error('Failed to check flashcard generation status. Please refresh the page.');
+            }
+          }
+        }, pollInterval);
+      } catch (error) {
+        console.error('Error processing PDF:', error);
+        toast.error('Failed to process PDF.');
+      }
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
   const toggleCardExpansion = (cardId: string) => {
     setExpandedCards(prev => {
       const newSet = new Set(prev);
@@ -500,7 +567,10 @@ export default function HomePage() {
                 type="text"
                 value={dialogData.name || dialogData.front || ''}
                 onChange={e =>
-                  setDialogData(prev => ({ ...prev, [dialogType === 'folder' ? 'name' : 'front']: e.target.value }))
+                  setDialogData(prev => ({
+                    ...prev,
+                    [dialogType === 'folder' ? 'name' : 'front']: e.target.value,
+                  }))
                 }
                 placeholder={dialogType === 'folder' ? 'Enter folder name...' : 'Enter question...'}
                 autoFocus
@@ -528,7 +598,8 @@ export default function HomePage() {
   return (
     <div className="app">
       <div className="main-container">
-        <AppHeader onAddFolder={addNewFolder} />
+        <AppHeader onAddFolder={addNewFolder} onUpload={handleUploadClick} />
+        <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".pdf" onChange={handleFileChange} />
 
         <Heatmap data={heatmapData} />
 

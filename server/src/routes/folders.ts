@@ -26,6 +26,31 @@ router.get('/', auth, async (req: Request, res: Response) => {
   }
 });
 
+// --- Get a single folder by ID ---
+router.get('/:id', auth, async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ msg: 'Unauthorized' });
+    }
+
+    const folder = await Folder.findOne({
+      _id: req.params.id,
+      user: (req.user as any).id,
+    });
+
+    if (!folder) {
+      return res.status(404).json({ msg: 'Folder not found' });
+    }
+
+    res.json(folder);
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error(msg);
+    sendDiscordWebhook(`[Folders/GetById] Error: ${msg}`);
+    res.status(500).send('Server error');
+  }
+});
+
 // --- Create a new folder ---
 router.post(
   '/',

@@ -30,7 +30,7 @@ passport_1.default.use(new passport_jwt_1.Strategy(jwtOptions, async (payload, d
 const googleOptions = {
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/api/auth/google/callback',
+    callbackURL: 'https://flashcards-api.simmu.me/api/auth/google/callback',
 };
 passport_1.default.use(new passport_google_oauth20_1.Strategy(googleOptions, async (accessToken, refreshToken, profile, done) => {
     const { id, displayName, emails } = profile;

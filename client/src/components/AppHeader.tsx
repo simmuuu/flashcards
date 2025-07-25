@@ -4,11 +4,12 @@ import './AppHeader.css';
 
 interface AppHeaderProps {
   onAddFolder?: () => void;
+  onUpload?: () => void;
   title?: string;
   isFolderOpen?: boolean;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ onAddFolder, title = 'Flashcards', isFolderOpen = false }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ onAddFolder, onUpload, title = 'Flashcards', isFolderOpen = false }) => {
   const { user, logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -45,6 +46,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onAddFolder, title = 'Flashcards'
         {onAddFolder && (
           <button onClick={onAddFolder} className="add-btn">
             + New Folder
+          </button>
+        )}
+        {onUpload && (
+          <button onClick={onUpload} className="add-btn">
+            Upload PDF
           </button>
         )}
         <button onClick={logout} className="logout-button">

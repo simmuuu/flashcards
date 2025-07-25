@@ -17,6 +17,18 @@ const FolderCard: React.FC<FolderCardProps> = ({
   onShareFolder,
   getDueCards,
 }) => {
+  if (folder.status === "processing") {
+    return (
+      <div className="folder-card processing">
+        <div className="folder-card-content">
+          <h3>{folder.name}</h3>
+          <p>Generating flashcards...</p>
+          <div className="loading-bar"></div>
+        </div>
+      </div>
+    );
+  }
+
   const dueCount = getDueCards(folder).length;
   const totalCards = folder.cards?.length || 0;
 

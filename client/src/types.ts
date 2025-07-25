@@ -20,6 +20,7 @@ export interface Folder {
     _id: string;
     name: string;
   };
+  status?: "processing" | "completed" | "failed";
 }
 
 export interface SharedFolder {

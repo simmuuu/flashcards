@@ -28,6 +28,28 @@ router.get('/', auth_1.default, async (req, res) => {
         res.status(500).send('Server error');
     }
 });
+// --- Get a single folder by ID ---
+router.get('/:id', auth_1.default, async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ msg: 'Unauthorized' });
+        }
+        const folder = await Folder_1.default.findOne({
+            _id: req.params.id,
+            user: req.user.id
+        });
+        if (!folder) {
+            return res.status(404).json({ msg: 'Folder not found' });
+        }
+        res.json(folder);
+    }
+    catch (err) {
+        const msg = err?.message || String(err);
+        console.error(msg);
+        (0, discordWebhook_1.sendDiscordWebhook)(`[Folders/GetById] Error: ${msg}`);
+        res.status(500).send('Server error');
+    }
+});
 // --- Create a new folder ---
 router.post('/', auth_1.default, [(0, express_validator_1.body)('name', 'Folder name is required').not().isEmpty().trim()], async (req, res) => {
     const errors = (0, express_validator_1.validationResult)(req);

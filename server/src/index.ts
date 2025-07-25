@@ -14,6 +14,7 @@ import authRoutes from './routes/auth';
 import folderRoutes from './routes/folders';
 import cardRoutes from './routes/cards';
 import statsRoutes from './routes/stats';
+import aiRoutes from './routes/ai';
 
 // Passport configuration
 import './config/passport';
@@ -49,6 +50,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/folders', folderRoutes);
 app.use('/api/cards', cardRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // --- Global Error Handler ---
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

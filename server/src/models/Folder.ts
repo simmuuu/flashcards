@@ -7,6 +7,11 @@ const folderSchema = new Schema(
     isShared: { type: Boolean, default: false },
     shareId: { type: String, unique: true, sparse: true }, // Unique identifier for sharing
     sharedBy: { type: Schema.Types.ObjectId, ref: 'User' }, // Original creator when copied
+    status: {
+      type: String,
+      enum: ['processing', 'completed', 'failed'],
+      default: 'completed',
+    },
   },
   { timestamps: true }
 );

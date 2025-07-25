@@ -7,6 +7,11 @@ const folderSchema = new mongoose_1.Schema({
     isShared: { type: Boolean, default: false },
     shareId: { type: String, unique: true, sparse: true }, // Unique identifier for sharing
     sharedBy: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User' }, // Original creator when copied
+    status: {
+        type: String,
+        enum: ['processing', 'completed', 'failed'],
+        default: 'completed',
+    },
 }, { timestamps: true });
 // Generate a unique share ID when isShared is set to true
 folderSchema.pre('save', function (next) {
