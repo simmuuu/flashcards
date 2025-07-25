@@ -10,7 +10,6 @@ import CustomDialog from '../components/Dialog'; // Renamed to CustomDialog
 import ShareDialog from '../components/ShareDialog';
 import Heatmap from '../components/Heatmap';
 import './HomePage.css';
-import { parsePdf } from '../utils/pdf';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -301,10 +300,27 @@ export default function HomePage() {
     const file = event.target.files?.[0];
     if (file) {
       try {
-        const text = await parsePdf(file, 10); // Limit to 5 pages
-        const response = await api.post('/ai/generate-from-pdf', {
-          text,
-          fileName: file.name,
+        // Check file size (5MB limit)
+        const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+        if (file.size > maxSize) {
+          toast.error('File size must be less than 5MB. Please choose a smaller file.');
+          return;
+        }
+
+        // Check file type
+        if (file.type !== 'application/pdf') {
+          toast.error('Please select a PDF file.');
+          return;
+        }
+
+        // Create FormData to send the file directly
+        const formData = new FormData();
+        formData.append('pdf', file);
+
+        const response = await api.post('/ai/generate-from-pdf', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         });
         const newFolder = response.data;
         setFolders(prevFolders => [...prevFolders, newFolder]);
@@ -340,10 +356,19 @@ export default function HomePage() {
             }
             // Reset retry count on successful request
             retryCount = 0;
-          } catch (err) {
+          } catch (err: any) {
             console.error('Error polling for folder status:', err);
-            retryCount++;
 
+            // If we get a 404, it means the folder was deleted due to generation failure
+            if (err.response?.status === 404) {
+              clearInterval(interval);
+              toast.error('Failed to generate flashcards. Please try again.');
+              // Remove the failed folder from the list
+              setFolders(prevFolders => prevFolders.filter(f => f._id !== newFolder._id));
+              return;
+            }
+
+            retryCount++;
             if (retryCount >= maxRetries) {
               clearInterval(interval);
               toast.error('Failed to check flashcard generation status. Please refresh the page.');

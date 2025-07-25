@@ -91,6 +91,7 @@ jobs:
                   GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
                   FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
                   DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+                  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
                 depends_on:
                   - mongodb
                 networks:

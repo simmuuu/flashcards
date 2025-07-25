@@ -2,15 +2,31 @@ import { Request, Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Folder from '../models/Folder';
 import Card from '../models/Card';
+import multer from 'multer';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
-export const generateFromPdf = async (req: Request, res: Response) => {
-  const { text, fileName } = req.body;
-  const userId = (req.user as any).id;
+// Configure multer for memory storage
+export const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  },
+});
 
-  if (!text) {
-    return res.status(400).json({ error: 'Text content is required' });
+export const generateFromPdf = async (req: Request, res: Response) => {
+  const userId = (req.user as any).id;
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ error: 'PDF file is required' });
   }
 
   // Create a temporary folder first
@@ -25,18 +41,28 @@ export const generateFromPdf = async (req: Request, res: Response) => {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
-    // Generate title from LLM
-    const titlePrompt = `Based on the following text content, generate a concise and descriptive title for a flashcard set. The title should be 3-8 words and capture the main topic. Only return the title, nothing else. Text: ${text.substring(
-      0,
-      1000
-    )}...`;
-    const titleResult = await model.generateContent(titlePrompt);
+    // Convert file buffer to base64
+    const pdfData = file.buffer.toString('base64');
+
+    // Create file part for Gemini
+    const filePart = {
+      inlineData: {
+        data: pdfData,
+        mimeType: 'application/pdf',
+      },
+    };
+
+    // Generate title from PDF
+    const titlePrompt =
+      'Based on the content of this PDF, generate a concise and descriptive title for a flashcard set. The title should be 3-8 words and capture the main topic. Only return the title, nothing else.';
+    const titleResult = await model.generateContent([titlePrompt, filePart]);
     const titleResponse = await titleResult.response;
     const generatedTitle = titleResponse.text().trim().replace(/"/g, '');
 
-    // Generate flashcards
-    const flashcardsPrompt = `Create flashcards from the following text. Each flashcard should have a question and an answer. Format the output as a JSON array of objects, where each object has a "question" and "answer" key. Make sure the JSON is valid and properly formatted. Text: ${text}`;
-    const flashcardsResult = await model.generateContent(flashcardsPrompt);
+    // Generate flashcards from PDF
+    const flashcardsPrompt =
+      'Create flashcards from the content of this PDF. Each flashcard should have a question and an answer. Format the output as a JSON array of objects, where each object has a "question" and "answer" key. Make sure the JSON is valid and properly formatted.';
+    const flashcardsResult = await model.generateContent([flashcardsPrompt, filePart]);
     const flashcardsResponse = await flashcardsResult.response;
 
     let flashcards;
@@ -69,6 +95,8 @@ export const generateFromPdf = async (req: Request, res: Response) => {
     await Folder.findByIdAndUpdate(folder._id, { status: 'completed' });
   } catch (error) {
     console.error('Error generating flashcards:', error);
-    await Folder.findByIdAndUpdate(folder._id, { status: 'failed' });
+    // Delete the folder if generation fails to avoid leaving "Generating..." folders
+    await Folder.findByIdAndDelete(folder._id);
+    // Note: We don't update the response here since it was already sent with status 202
   }
 };
