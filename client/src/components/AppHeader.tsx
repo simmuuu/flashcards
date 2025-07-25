@@ -81,6 +81,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onAddFolder, onUpload, title = 'F
                   + New Folder
                 </button>
               )}
+              {onUpload && (
+                <button
+                  onClick={() => {
+                    onUpload();
+                    setIsDropdownOpen(false);
+                  }}
+                  className="mobile-dropdown-item"
+                >
+                  Upload PDF
+                </button>
+              )}
               <button
                 onClick={() => {
                   logout();
