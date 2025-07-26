@@ -21,6 +21,7 @@ export default function HomePage() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [currentFolder, setCurrentFolder] = useState<Folder | null>(null);
   const [currentCard, setCurrentCard] = useState<Card | null>(null);
+  const [studyQueue, setStudyQueue] = useState<Card[]>([]); // Queue of cards for current study session
   const [showAnswer, setShowAnswer] = useState(false);
   const [studyProgress, setStudyProgress] = useState<number[]>([]); // Track answers for current session
   const [showDialog, setShowDialog] = useState(false);
@@ -94,18 +95,19 @@ export default function HomePage() {
 
   // Initialize study mode when entering study URL
   useEffect(() => {
-    if (isStudyMode && currentFolder && !currentCard) {
-      const dueCards = getDueCards(currentFolder);
-      if (dueCards.length === 0) {
-        toast.error('No cards due for review!');
+    if (isStudyMode && currentFolder && !currentCard && studyQueue.length === 0) {
+      const studyCards = getStudyCards(currentFolder);
+      if (studyCards.length === 0) {
+        toast.error('No cards available for study!');
         navigate(`/folder/${currentFolder._id}`);
         return;
       }
-      setCurrentCard(dueCards[0]);
+      setStudyQueue(studyCards);
+      setCurrentCard(studyCards[0]);
       setShowAnswer(false);
       setStudyProgress([]);
     }
-  }, [isStudyMode, currentFolder, currentCard, navigate]);
+  }, [isStudyMode, currentFolder, currentCard, studyQueue, navigate]);
 
   // Format time until next review
   const formatTimeUntilReview = (nextReview: string) => {
@@ -133,18 +135,42 @@ export default function HomePage() {
       : [];
   };
 
+  const getStudyCards = (folder: Folder): Card[] => {
+    // Get up to 20 cards for study session, prioritizing due cards first
+    if (!folder.cards) return [];
+
+    const now = Date.now();
+    const dueCards = folder.cards
+      .filter(card => new Date(card.nextReview).getTime() <= now)
+      .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime());
+
+    // If we have enough due cards, return up to 20 of them
+    if (dueCards.length >= 20) {
+      return dueCards.slice(0, 20);
+    }
+
+    // Otherwise, fill up to 20 with other cards (oldest first by nextReview)
+    const otherCards = folder.cards
+      .filter(card => new Date(card.nextReview).getTime() > now)
+      .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime());
+
+    return [...dueCards, ...otherCards].slice(0, 20);
+  };
+
   const startStudying = async (folder: Folder) => {
     try {
       const res = await api.get<Card[]>(`/cards/${folder._id}`);
       const folderWithCards = { ...folder, cards: res.data };
       setCurrentFolder(folderWithCards);
 
-      const dueCards = getDueCards(folderWithCards);
-      if (dueCards.length === 0) {
-        toast.error('No cards due for review!');
+      const studyCards = getStudyCards(folderWithCards);
+      if (studyCards.length === 0) {
+        toast.error('No cards available for study!');
         return;
       }
-      setCurrentCard(dueCards[0]);
+
+      setStudyQueue(studyCards);
+      setCurrentCard(studyCards[0]);
       setShowAnswer(false);
       setStudyProgress([]); // Reset progress for new session
       navigate(`/folder/${folder._id}/study`);
@@ -179,17 +205,19 @@ export default function HomePage() {
       // Add to progress tracking
       setStudyProgress(prev => [...prev, quality]);
 
-      // Get next due card
-      const remainingDueCards = updatedCurrentFolder ? getDueCards(updatedCurrentFolder) : [];
+      // Find current card index in study queue and get next card
+      const currentCardIndex = studyQueue.findIndex(card => card._id === currentCard._id);
+      const nextCardIndex = currentCardIndex + 1;
 
-      if (remainingDueCards.length > 0) {
-        setCurrentCard(remainingDueCards[0]);
+      if (nextCardIndex < studyQueue.length) {
+        setCurrentCard(studyQueue[nextCardIndex]);
         setShowAnswer(false);
       } else {
         toast.success('All cards reviewed! Great job!');
         navigate('/');
         setCurrentFolder(null);
         setCurrentCard(null);
+        setStudyQueue([]);
         setStudyProgress([]);
       }
     } catch (err) {
@@ -399,8 +427,8 @@ export default function HomePage() {
   };
 
   if (isStudyMode && currentCard && currentFolder) {
-    const totalDueCards = getDueCards(currentFolder).length;
-    const progressValue = (studyProgress.length / totalDueCards) * 100;
+    const totalStudyCards = studyQueue.length;
+    const progressValue = (studyProgress.length / totalStudyCards) * 100;
 
     return (
       <div className="app">
@@ -418,7 +446,7 @@ export default function HomePage() {
                 <div key={index} className={`progress-dot ${quality >= 3 ? 'easy' : 'hard'}`}></div>
               ))}
               <div className="progress-dot current"></div>
-              {Array.from({ length: Math.max(0, totalDueCards - studyProgress.length - 1) }, (_, i) => (
+              {Array.from({ length: Math.max(0, totalStudyCards - studyProgress.length - 1) }, (_, i) => (
                 <div key={`remaining-${i}`} className="progress-dot"></div>
               ))}
             </div>
@@ -443,15 +471,15 @@ export default function HomePage() {
                 <div className="difficulty-buttons-row">
                   <button onClick={() => markDifficulty(1)} className="diff-btn hard">
                     <span className="diff-label">Again</span>
-                    <span className="diff-time">&lt;10m</span>
+                    {/* <span className="diff-time">&lt;10m</span> */}
                   </button>
                   <button onClick={() => markDifficulty(3)} className="diff-btn medium">
                     <span className="diff-label">Good</span>
-                    <span className="diff-time">1d</span>
+                    {/* <span className="diff-time">1d</span> */}
                   </button>
                   <button onClick={() => markDifficulty(5)} className="diff-btn easy">
                     <span className="diff-label">Easy</span>
-                    <span className="diff-time">4d</span>
+                    {/* <span className="diff-time">4d</span> */}
                   </button>
                 </div>
               </div>
@@ -529,10 +557,18 @@ export default function HomePage() {
               <p>
                 Due for review: <span className="due-count">{dueCards.length}</span>
               </p>
+              <p>
+                Study queue: <span className="due-count">{Math.min(getStudyCards(currentFolder).length, 20)}</span>{' '}
+                cards
+              </p>
             </div>
 
-            <button onClick={() => startStudying(currentFolder)} className="study-btn" disabled={dueCards.length === 0}>
-              Start Studying
+            <button
+              onClick={() => startStudying(currentFolder)}
+              className="study-btn"
+              disabled={(currentFolder.cards?.length || 0) === 0}
+            >
+              Start Studying ({Math.min(getStudyCards(currentFolder).length, 20)} cards)
             </button>
 
             <div className="cards-list">

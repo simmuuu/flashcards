@@ -510,6 +510,58 @@ body {
   color: #0f0f0f;
 }
 
+.card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 100px;
+  text-align: right;
+}
+
+.quality {
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 0;
+}
+
+.quality.easy {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.quality.medium {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+.quality.hard {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.card-meta span {
+  font-weight: 500;
+}
+
+.avg-quality {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
 .study-container {
   max-width: 700px;
   margin: 0 auto;
@@ -688,12 +740,6 @@ body {
 .diff-label {
   font-size: 1rem;
   font-weight: 600;
-}
-
-.diff-time {
-  font-size: 0.8rem;
-  opacity: 0.8;
-  font-weight: 400;
 }
 
 .diff-btn.easy {
