@@ -442,9 +442,10 @@ export default function HomePage() {
             </div>
 
             <div className="progress-indicators">
-              {studyProgress.map((quality, index) => (
-                <div key={index} className={`progress-dot ${quality >= 3 ? 'easy' : 'hard'}`}></div>
-              ))}
+              {studyProgress.map((quality, index) => {
+                const difficultyClass = quality === 5 ? 'easy' : quality === 3 ? 'medium' : 'hard';
+                return <div key={index} className={`progress-dot ${difficultyClass}`}></div>;
+              })}
               <div className="progress-dot current"></div>
               {Array.from({ length: Math.max(0, totalStudyCards - studyProgress.length - 1) }, (_, i) => (
                 <div key={`remaining-${i}`} className="progress-dot"></div>
