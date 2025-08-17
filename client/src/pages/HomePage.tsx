@@ -31,11 +31,23 @@ export default function HomePage() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [folderToShare, setFolderToShare] = useState<Folder | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Determine current view based on URL
   const isStudyMode = location.pathname.includes('/study');
   const isCardsView = folderId && !isStudyMode;
   const isFoldersView = !folderId;
+
+  // Filter folders based on search query
+  const filteredFolders = folders.filter(folder => folder.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  // Filter cards based on search query
+  const filteredCards =
+    currentFolder?.cards?.filter(
+      card =>
+        card.front.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        card.back.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   const fetchFolders = async () => {
     if (user) {
@@ -553,6 +565,16 @@ export default function HomePage() {
               </div>
             </div>
 
+            <div className="search-container">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search cards..."
+                className="search-input"
+              />
+            </div>
+
             <div className="cards-stats">
               <p>Total cards: {currentFolder.cards?.length || 0}</p>
               <p>
@@ -573,38 +595,44 @@ export default function HomePage() {
             </button>
 
             <div className="cards-list">
-              {currentFolder.cards?.map((card: Card) => {
-                const isDue = new Date(card.nextReview).getTime() <= Date.now();
-                const difficultyLevel =
-                  card.easinessFactor > 2.5 ? 'easy' : card.easinessFactor < 2.0 ? 'hard' : 'medium';
-                const isExpanded = expandedCards.has(card._id);
+              {filteredCards.length === 0 && searchQuery.trim() !== '' ? (
+                <div className="no-results">
+                  <p>No cards found matching "{searchQuery}"</p>
+                </div>
+              ) : (
+                filteredCards.map((card: Card) => {
+                  const isDue = new Date(card.nextReview).getTime() <= Date.now();
+                  const difficultyLevel =
+                    card.easinessFactor > 2.5 ? 'easy' : card.easinessFactor < 2.0 ? 'hard' : 'medium';
+                  const isExpanded = expandedCards.has(card._id);
 
-                return (
-                  <div
-                    key={card._id}
-                    className={`card-item ${isDue ? 'due' : ''} ${difficultyLevel} ${isExpanded ? 'expanded' : ''}`}
-                    onClick={() => toggleCardExpansion(card._id)}
-                  >
-                    <div className="card-preview">
-                      <div className="card-content-section">
-                        <div className="card-question">
-                          <strong>{card.front}</strong>
-                        </div>
-                        {isExpanded && (
-                          <div className="card-answer">
-                            <div className="answer-text">{card.back}</div>
+                  return (
+                    <div
+                      key={card._id}
+                      className={`card-item ${isDue ? 'due' : ''} ${difficultyLevel} ${isExpanded ? 'expanded' : ''}`}
+                      onClick={() => toggleCardExpansion(card._id)}
+                    >
+                      <div className="card-preview">
+                        <div className="card-content-section">
+                          <div className="card-question">
+                            <strong>{card.front}</strong>
                           </div>
-                        )}
+                          {isExpanded && (
+                            <div className="card-answer">
+                              <div className="answer-text">{card.back}</div>
+                            </div>
+                          )}
+                        </div>
+                        <span className={`difficulty ${difficultyLevel}`}>{difficultyLevel.toUpperCase()}</span>
                       </div>
-                      <span className={`difficulty ${difficultyLevel}`}>{difficultyLevel.toUpperCase()}</span>
+                      <div className="card-footer">
+                        <div className="next-review">Next review: {formatTimeUntilReview(card.nextReview)}</div>
+                        <div className="click-hint">{isExpanded ? 'Click to hide' : 'Click for answer'}</div>
+                      </div>
                     </div>
-                    <div className="card-footer">
-                      <div className="next-review">Next review: {formatTimeUntilReview(card.nextReview)}</div>
-                      <div className="click-hint">{isExpanded ? 'Click to hide' : 'Click for answer'}</div>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -665,19 +693,35 @@ export default function HomePage() {
 
         <Heatmap data={heatmapData} />
 
+        <div className="search-container">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search folders..."
+            className="search-input"
+          />
+        </div>
+
         <div className="folders-grid">
-          {folders.map(folder => (
-            <FolderCard
-              key={folder._id}
-              folder={folder}
-              onFolderClick={folder => {
-                navigate(`/folder/${folder._id}`);
-              }}
-              onDeleteFolder={handleDeleteFolder}
-              onShareFolder={handleShareFolder}
-              getDueCards={getDueCards}
-            />
-          ))}
+          {filteredFolders.length === 0 && searchQuery.trim() !== '' ? (
+            <div className="no-results">
+              <p>No folders found matching "{searchQuery}"</p>
+            </div>
+          ) : (
+            filteredFolders.map(folder => (
+              <FolderCard
+                key={folder._id}
+                folder={folder}
+                onFolderClick={folder => {
+                  navigate(`/folder/${folder._id}`);
+                }}
+                onDeleteFolder={handleDeleteFolder}
+                onShareFolder={handleShareFolder}
+                getDueCards={getDueCards}
+              />
+            ))
+          )}
         </div>
       </div>
 
